@@ -1,8 +1,9 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const usersModel = require('./model/users');
-const PORT = process.env.PORT || 8000;
+const database = require('./database/dataProvider');
 
+const PORT = process.env.PORT || 8000;
 
 const app = express();
 const SUPPORTED_QUERY = ['country', 'name', 'email', 'age'];
@@ -78,8 +79,10 @@ app.delete('/users/:id', async (req, res, next) => {
 
 app.use((req, res) => {
     res.status(404).json({ message: 'Path not found, only the following paths are supported: GET /users/:id, GET /users' });
-  });
+});
 
-  server = app.listen(PORT, function() {
-    console.log(`Test Server listening.. Access it using address: http://localhost:${PORT}`);
-  });
+database.init().then(() => {
+        app.listen(PORT, function() {
+            console.log(`Test Server listening.. Access it using address: http://localhost:${PORT}`);
+        });
+});
