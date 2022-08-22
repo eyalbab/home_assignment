@@ -4,9 +4,10 @@ const readline = require('readline');
 const DB_FILE_NAME = "data.csv";
 
 const userByIdMap = {};
+const usersByCountryMap = new Map();
 
 async function init() {
-    const filestream = fs.createReadStream(DB_FILE_NAME);
+  const filestream = fs.createReadStream(DB_FILE_NAME);
 
   const rl = readline.createInterface({
     input: filestream,
@@ -14,7 +15,6 @@ async function init() {
   });
 
   for await (const line of rl) {
-    // Each line in input.txt will be successively available here as `line`.
     const dataParts = line.split(',');
     const id = dataParts[0];
     const email = dataParts[1];
@@ -27,15 +27,30 @@ async function init() {
 }
 
 function addUserToMemory(id, email, name, birthday, countryCode) {
-  userByIdMap[id] = {email, name, birthday, countryCode};
+  userByIdMap[id] = { email, name, birthday, countryCode };
+  addUserToCountry(id, countryCode);
+
+}
+
+function addUserToCountry(id, countryCode) {
+  if (usersByCountryMap.has(countryCode)) {
+    usersByCountryMap.get(countryCode).push(id);
+  } else {
+    usersByCountryMap.set(countryCode, [id]);
+  }
 }
 
 function getUserById(id) {
   return userByIdMap[id];
 }
 
+function getUserByCountry(countryCode) {
+  return usersByCountryMap.get(countryCode);
+}
+
 
 module.exports = {
   init,
-  getUserById
+  getUserById,
+  getUserByCountry
 }

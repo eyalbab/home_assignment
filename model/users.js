@@ -18,7 +18,7 @@ module.exports = {
     getUsersByCountry: async function(country) {
         console.log(`getUsersByCountry called with country: ${country}`);
 
-        // Add implementation here
+        return database.getUserByCountry(country);
 
         return [];
     },
