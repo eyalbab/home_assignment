@@ -10,9 +10,7 @@ module.exports = {
     getUsersByAge: async function(age) {
         console.log(`getUsersByAge called with age: ${age}`);
 
-        // Add implementation here
-
-        return [];
+        return database.getUsersByAge(age);
     },
 
     getUsersByCountry: async function(country) {
