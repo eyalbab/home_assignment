@@ -1,13 +1,15 @@
 const fs = require('fs');
 const readline = require('readline');
-const AVLTree = require('binary-search-tree').AVLTree;
 const moment = require('moment');
+const { AVLTree } = require('binary-search-tree');
+const TrieSearch = require('trie-search');
 
 const DB_FILE_NAME = "data.csv";
 
 const userByIdMap = {};
-const usersByCountryMap = new Map();
-let agesTree = new AVLTree();
+const usersByCountryMapIndex = new Map();
+const agesTreeIndex = new AVLTree({ unique: false });
+const namesTrieIndex = new TrieSearch('name', { min: 3, ignoreCase: true, splitOnRegEx: false });
 
 async function init() {
   const filestream = fs.createReadStream(DB_FILE_NAME);
@@ -17,63 +19,96 @@ async function init() {
     crlfDelay: Infinity
   });
 
+  let isFirstLine = true;
   for await (const line of rl) {
+
+    // First line contains headers
+    if (isFirstLine) {
+      isFirstLine = false;
+      continue;
+    }
+
     const dataParts = line.split(',');
     const id = dataParts[0];
     const email = dataParts[1];
     const name = dataParts[2];
     const birthday = dataParts[3];
     const countryCode = dataParts[4];
-    if (id != "Id")         // first row of csv issue
-      addUserToMemory(id, email, name, birthday, countryCode);
+
+    addUserToMemory(id, email, name, birthday, countryCode);
   }
 }
 
 function addUserToMemory(id, email, name, birthday, countryCode) {
-  userByIdMap[id] = { email, name, birthday, countryCode };
-  addUserToCountry(id, countryCode);
-  addUserToAgeTree(id, birthday);
+  userByIdMap[id] = { id, email, name, birthday, countryCode };
+  addUserToCountryIndex(id, countryCode);
+  addUserToAgeTreeIndex(id, birthday);
+  addUserToNameIndex(id, name);
 
 }
 
-function addUserToCountry(id, countryCode) {
-  if (usersByCountryMap.has(countryCode)) {
-    usersByCountryMap.get(countryCode).push(id);
+function addUserToCountryIndex(id, countryCode) {
+  if (usersByCountryMapIndex.has(countryCode)) {
+    usersByCountryMapIndex.get(countryCode).push(id);
   } else {
-    usersByCountryMap.set(countryCode, [id]);
+    usersByCountryMapIndex.set(countryCode, [id]);
   }
 }
 
-function addUserToAgeTree(id, birthday) {
-  let unixTimestamp = moment(birthday, 'DD/MM/YYYY').unix();
-  agesTree.insert(unixTimestamp, id);
+function addUserToAgeTreeIndex(id, birthday) {
+  const birthdayUnixTime = moment(birthday, 'DD/MM/YYYY').unix();
+  agesTreeIndex.insert(birthdayUnixTime, id);
+}
+
+function addUserToNameIndex(id, name) {
+  const nameSplit = name.split(" ");
+  const fName = nameSplit[0];
+  const lName = nameSplit[1];
+  namesTrieIndex.map(name, id);
+  if (fName.valueOf() !== lName.valueOf())    // for cases e.g Jacob Jacob
+    namesTrieIndex.map(lName, id);
 }
 
 function getUserById(id) {
-  agesTree.insert(moment().unix(), id);
   return userByIdMap[id];
 }
 
-function getUserByCountry(countryCode) {
-  let usersFromCountry = [];
-  usersByCountryMap.get(countryCode)
-    .forEach(id => { usersFromCountry.push(getUserById(id)) });
-  return usersFromCountry;
+function getUsersByCountry(countryCode) {
+  return usersByCountryMapIndex.get(countryCode)
+    .map(id => getUserById(id));
 }
 
 function getUsersByAge(age) {
-  let usersByAge = [];
-  let currentTime = moment().startOf('day');    // start of => to get users born the same day only earlier than current time.
-  let lowerBoundUnix = currentTime.subtract(age, 'years').unix();
-  let upperBoundUnix = currentTime.add(1, 'years').unix();
-  usersByAgeIds = agesTree.betweenBounds({ $lt: upperBoundUnix, $gte: lowerBoundUnix });
-  usersByAgeIds.forEach(id => { usersByAge.push(getUserById(id)) });
-  return usersByAge;
+  age = Number(age);
+  const lowerBoundUnix = moment().startOf('day').subtract(age + 1,
+    'years').unix();
+  const upperBoundUnix = moment().startOf('day').subtract(age, 'years').unix();
+  const usersByAgeIds = agesTreeIndex.betweenBounds(
+    { $lte: upperBoundUnix, $gt: lowerBoundUnix });
+  return usersByAgeIds.map(id => getUserById(id));
+}
+
+function getUsersByName(name) {
+  const usersByNameIds = namesTrieIndex.search(name);
+  return usersByNameIds.map(id => getUserById(id));
+}
+
+function deleteUser(id) {
+  const userDetails = getUserById(id);
+  const countryCode = userDetails[4];
+  deleteUserFromCountry(id, countryCode);
+
+}
+
+function deleteUserFromCountry(id, countryCode) {
+
 }
 
 module.exports = {
   init,
   getUserById,
-  getUserByCountry,
-  getUsersByAge
+  getUsersByCountry,
+  getUsersByAge,
+  getUsersByName,
+  deleteUser
 }

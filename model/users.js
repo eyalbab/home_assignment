@@ -16,23 +16,19 @@ module.exports = {
     getUsersByCountry: async function(country) {
         console.log(`getUsersByCountry called with country: ${country}`);
 
-        return database.getUserByCountry(country);
-
-        return [];
+        return database.getUsersByCountry(country);
     },
 
     getUsersByName: async function(name) {
         console.log(`searchUsersByName called with name: ${name}`);
 
-        // Add implementation here
-
-        return [];
+        return database.getUsersByName(name);
     },
 
     deleteUser: async function(id) {
         console.log(`deleteUser called with id: ${id}`);
-        // Add implementation here
-
+        database.deleteUser(id);
+        
         return;
     }
 }
