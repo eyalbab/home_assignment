@@ -1,10 +1,12 @@
 const fs = require('fs');
 const readline = require('readline');
+const AVLTree = require('binary-search-tree').AVLTree
 
 const DB_FILE_NAME = "data.csv";
 
 const userByIdMap = {};
 const usersByCountryMap = new Map();
+const ageTimestampTree = new AVLTree();
 
 async function init() {
   const filestream = fs.createReadStream(DB_FILE_NAME);
@@ -40,12 +42,19 @@ function addUserToCountry(id, countryCode) {
   }
 }
 
+function addUserToAgeTree(id, birthday) {
+  
+}
+
 function getUserById(id) {
   return userByIdMap[id];
 }
 
 function getUserByCountry(countryCode) {
-  return usersByCountryMap.get(countryCode);
+  let usersFromCountry = [];
+  usersByCountryMap.get(countryCode)
+    .forEach(Id => { usersFromCountry.push(getUserById(Id)) });
+  return usersFromCountry;
 }
 
 
