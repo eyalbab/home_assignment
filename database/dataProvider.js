@@ -90,7 +90,7 @@ function getUsersByAge(age) {
 
 function getUsersByName(name) {
   const usersByNameIds = namesTrieIndex.search(name);
-  return usersByNameIds.filter(id => getUserById(id) != null).map(id => getUserById(id));
+  return usersByNameIds.map(id => getUserById(id)).filter(user => !!user);      // remove deleted users
 }
 
 function deleteUser(id) {
@@ -98,16 +98,15 @@ function deleteUser(id) {
   deleteUserFromCountryIndex(id, userDetails['countryCode']);
   deleteUserFromAgesIndex(id, userDetails['birthday']);
   delete userByIdMap[id];
-
 }
 
 function deleteUserFromCountryIndex(id, countryCode) {
-  let countryUsersIds = usersByCountryMapIndex.get(countryCode);
+  const countryUsersIds = usersByCountryMapIndex.get(countryCode);
   usersByCountryMapIndex.set(countryCode, countryUsersIds.filter(IdItr => IdItr !== id));
 }
 
 function deleteUserFromAgesIndex(id, birthday) {
-  let birthdayUnixTime = moment(birthday, 'DD/MM/YYYY').unix();
+  const birthdayUnixTime = moment(birthday, 'DD/MM/YYYY').unix();
   agesTreeIndex.delete(birthdayUnixTime, id);
 }
 
